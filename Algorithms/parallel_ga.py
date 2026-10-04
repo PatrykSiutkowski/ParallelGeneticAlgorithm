@@ -11,7 +11,7 @@ import time
 
 # Argument Parsing
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset"         , type=str  , default="F-n45-k4.vrp")
+parser.add_argument("--dataset"         , type=str  , default="F-n135-k7.vrp")
 parser.add_argument("--population"      , type=int  , default=10)
 parser.add_argument("--generations"      , type=int , default=1000)
 parser.add_argument("--mutation"        , type=float, default=0.5)
