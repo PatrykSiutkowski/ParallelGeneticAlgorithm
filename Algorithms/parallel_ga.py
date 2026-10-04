@@ -15,8 +15,6 @@ parser.add_argument("--generations"      , type=int , default=1000)
 parser.add_argument("--mutation"        , type=float, default=0.5)
 parser.add_argument("--crossover"       , type=float, default=0.5)
 parser.add_argument("--tournament_size" , type=int  , default=3)
-parser.add_argument("--dynamic_strategy", type=str  , default="ILM_DHC")
-parser.add_argument("--exval"           , type=int  , default=99)
 args = parser.parse_args()
 
 basepath = Path(__file__).resolve().parent.parent.parent
@@ -95,42 +93,17 @@ def tournament_selection(population, fitnesses, tounament_size): # Tournament se
     
     return selected[0][0]
 
-# def generate_population(num_customers, population): # Initial population
+def generate_population(num_customers, population): # Initial population
 
-#     population = []
-#     base = list(range(1, num_customers))  # exclude depot (0)
+    population_list = []
+    base = list(range(1, num_customers))  # exclude depot (0)
 
-#     for _ in range(population):
-#         perm = base.copy()
-#         random.shuffle(perm)
-#         population.append(perm)
-
-#     return population
-def generate_population(num_customers, population_size):
-    population = []
-    base = list(range(1, num_customers))  # exclude depot
-
-    for _ in range(population_size):
+    for _ in range(population):
         perm = base.copy()
         random.shuffle(perm)
-        population.append(perm)
+        population_list.append(perm)
 
-    return population
-
-def get_dynamic_rates(t, T, strategy):
-    if strategy == "ILM_DHC":
-        mutation  = (t / T)
-        crossover = 1 - (t / T)
-
-    elif strategy == "DHM_ILC":
-        mutation  = 1 - (t / T)
-        crossover = (t / T)
-
-    else: # fallback to static
-        mutation = args.mutation_rate
-        crossover = args.crossover_rate
-
-    return mutation, crossover
+    return population_list
 
 def genetic_algorithm(vertices, demands, capacity):
     population = generate_population(len(vertices), args.population)
@@ -162,17 +135,10 @@ def genetic_algorithm(vertices, demands, capacity):
             parent1 = tournament_selection(population, fitnesses, args.tournament_size)
             parent2 = tournament_selection(population, fitnesses, args.tournament_size)
 
-            if args.dynamic_strategy == "DHM_ILC" or args.dynamic_strategy == "ILM_DHC":
-                mutation_rate, crossover_rate = get_dynamic_rates(gen, args.generations, args.dynamic_strategy)
-                child1, child2 = ox(parent1, parent2, crossover_rate)
-                child1 = mutate(child1, mutation_rate)
-                child2 = mutate(child2, mutation_rate)
+            child1, child2 = ox(parent1, parent2, args.crossover)
+            child1 = mutate(child1, args.mutation)
+            child2 = mutate(child2, args.mutation)
 
-            else:
-                child1, child2 = ox(parent1, parent2, args.crossover_rate)
-                child1 = mutate(child1, args.mutation_rate)
-                child2 = mutate(child2, args.mutation_rate)
-            
             new_population.extend([child1, child2])
 
         population = new_population[:args.population]
@@ -185,4 +151,4 @@ if __name__ == "__main__":
     solution, best_cost, fitness_over_time = genetic_algorithm(vertices, demands, capacity)
     shortest = functions.getvalue(filepath)
     
-    plot_results.plot_results(vertices, solution, fitness_over_time, best_cost, filepath, shortest, algo="ga", exval=args.exval)
+    #plot_results.plot_results(vertices, solution, fitness_over_time, best_cost, filepath, shortest)
