@@ -18,7 +18,7 @@ parser.add_argument("--tournament_size" , type=int  , default=3)
 args = parser.parse_args()
 
 basepath = Path(__file__).resolve().parent.parent.parent
-filepath = f"{basepath}/VRPAlgorithmComparison/Database/{args.dataset}"
+filepath = f"{basepath}/ParallelGeneticAlgorihtm/Database/{args.dataset}"
 
 def split_routes(individual, demands, capacity): # Decode CVRP routes
     routes = []
