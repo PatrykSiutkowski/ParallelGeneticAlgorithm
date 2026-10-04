@@ -6,6 +6,8 @@ import random
 import extract_data as ed
 import plot_results
 import functions
+import multiprocessing as mp
+import time
 
 # Argument Parsing
 parser = argparse.ArgumentParser()
@@ -18,7 +20,8 @@ parser.add_argument("--tournament_size" , type=int  , default=3)
 args = parser.parse_args()
 
 basepath = Path(__file__).resolve().parent.parent.parent
-filepath = f"{basepath}/ParallelGeneticAlgorihtm/Database/{args.dataset}"
+filepath = f"{basepath}/ParallelGeneticAlgorithm/Database/{args.dataset}"
+
 
 def split_routes(individual, demands, capacity): # Decode CVRP routes
     routes = []
@@ -112,43 +115,50 @@ def genetic_algorithm(vertices, demands, capacity):
     best_cost = float("inf")
     fitness_over_time = []
 
-    for gen in range(args.generations):
+    with mp.Pool() as pool:
 
-        fitnesses = []
+        for gen in range(args.generations):
 
-        for individual in population:
-            score = fitness(individual, vertices, demands, capacity)
-            fitnesses.append(score)
+            fitnesses = pool.starmap(
+                fitness,
+                [(individual, vertices, demands, capacity)
+                 for individual in population]
+            )
 
-        # Track best
-        gen_best = min(fitnesses)
-        if gen_best < best_cost:
-            best_cost = gen_best
-            best_solution = population[fitnesses.index(gen_best)]
+            # Track best
+            gen_best = min(fitnesses)
+            if gen_best < best_cost:
+                best_cost = gen_best
+                best_solution = population[fitnesses.index(gen_best)]
 
-        fitness_over_time.append(best_cost)
+            fitness_over_time.append(best_cost)
 
-        new_population = [] # New generation
+            new_population = [] # New generation
 
-        while len(new_population) < args.population:
+            while len(new_population) < args.population:
 
-            parent1 = tournament_selection(population, fitnesses, args.tournament_size)
-            parent2 = tournament_selection(population, fitnesses, args.tournament_size)
+                parent1 = tournament_selection(population, fitnesses, args.tournament_size)
+                parent2 = tournament_selection(population, fitnesses, args.tournament_size)
 
-            child1, child2 = ox(parent1, parent2, args.crossover)
-            child1 = mutate(child1, args.mutation)
-            child2 = mutate(child2, args.mutation)
+                child1, child2 = ox(parent1, parent2, args.crossover)
+                child1 = mutate(child1, args.mutation)
+                child2 = mutate(child2, args.mutation)
 
-            new_population.extend([child1, child2])
+                new_population.extend([child1, child2])
 
-        population = new_population[:args.population]
+            population = new_population[:args.population]
 
     routes = split_routes(best_solution, demands, capacity)
     return routes, best_cost, fitness_over_time
 
 if __name__ == "__main__":
     vertices, demands, capacity = ed.extract_data(filepath)
+
+    start = time.time()
     solution, best_cost, fitness_over_time = genetic_algorithm(vertices, demands, capacity)
+    end = time.time()
+    time_elapsed = round(end-start, 3)
+    print(f"Time elapsed: {time_elapsed}")
     shortest = functions.getvalue(filepath)
     
     #plot_results.plot_results(vertices, solution, fitness_over_time, best_cost, filepath, shortest)
